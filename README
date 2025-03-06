@@ -1,1 +1,31 @@
 These are some quick extensions. Shared now to give a colleague a demo of how to use a custom cache for URLCache.shared to cache images.
+
+When the app launches the following setup is run:
+
+func setupURLCache() {
+    let megabyte = 1024 * 1024
+    
+    let fileManager = FileManager.default
+    let customCacheDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("http-cache")
+    try! fileManager.createDirectory(at: customCacheDirectory, withIntermediateDirectories: true, attributes: nil)
+    
+    URLCache.shared = URLCache(
+        memoryCapacity: 100 * megabyte,
+        diskCapacity: 100 * megabyte,
+        diskPath: customCacheDirectory.path
+    )
+}
+
+Then for loading a cached image:
+
+static func cachedImage(forURL url: URL) -> UIImage? {
+    let cacheRequest = URLRequest(url: url, cachePolicy: .returnCacheDataDontLoad)
+    let cachedResponse = URLCache.shared.cachedResponse(for: cacheRequest)
+    if let data = cachedResponse?.data {
+        return UIImage(data: data)
+    } else {
+        return nil
+    }
+}
+
+In URLImageExtension there is also a custom ImageLoader. It’s function is only to prevent the same request to be sent again for an image that is being loaded.
